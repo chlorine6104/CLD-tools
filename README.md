@@ -51,7 +51,8 @@ If the output directory is omitted, the current working directory is used.
     ├── output.csv
     ├── font.ttf
     └── imgFiles/
-        └── extracted images...
+        └── directory
+            └──extracted images...
 
 The actual output structure depends on the contents of the input CLD file.
 
