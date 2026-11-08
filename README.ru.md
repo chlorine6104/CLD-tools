@@ -45,7 +45,8 @@ CLD-tools включает независимый инструмент для п
     ├── output.csv
     ├── font.ttf
     └── imgFiles/
-        └── extracted images...
+        └── directory
+            └──extracted images...
 
 Фактическая структура выходных файлов зависит от содержимого исходного CLD-файла.
 
