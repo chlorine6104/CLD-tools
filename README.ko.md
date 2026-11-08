@@ -1,6 +1,6 @@
 # CLD-tools
 
-*The Coffin of Andy and Leyley (TCOAAL)*에서 사용하는 CLD(Coffin Language Data) 파일을 추출, 검사 및 수정하기 위한 Perl 기반 유틸리티입니다.
+_The Coffin of Andy and Leyley_ (TCOAAL)에서 사용하는 CLD(Coffin Language Data) 파일을 추출, 검사 및 수정하기 위한 Perl 기반 유틸리티입니다.
 
 CLD-tools를 사용하면 게임에서 공식적으로 지원하는 사용자 번역 파일을 압축 해제하고 내부 데이터를 확인할 수 있습니다. 내장된 이미지, 폰트 및 번역 데이터를 추출할 수 있으며, 수정 사항을 CLD 파일에 적용하기 위한 리패커도 포함되어 있습니다.
 
@@ -45,7 +45,8 @@ CLD-tools에는 추출된 CLD 데이터를 수정하고 다시 CLD 파일로 빌
     ├── output.csv
     ├── font.ttf
     └── imgFiles/
-        └── extracted images...
+        └── directory
+            └──extracted images...
 
 실제 출력 구조는 입력 CLD 파일의 내용에 따라 달라집니다.
 
@@ -77,7 +78,7 @@ CLD-tools에는 추출된 CLD 데이터를 수정하고 다시 CLD 파일로 빌
 
     perl cld_repack.pl original.cld modified.cld output.csv ./img ./font.ttf
 
-## 재패킹 과정
+## 재구성 과정
 
 - CSV 값은 section, key, value 열을 기준으로 매칭됩니다.
 - 이미지 파일은 Base64로 인코딩된 후 해당하는 기존 항목에 적용됩니다.
@@ -105,15 +106,15 @@ CLD-tools에는 추출된 CLD 데이터를 수정하고 다시 CLD 파일로 빌
 
 버그 수정, 기능 개선 및 기타 모든 형태의 기여를 환영합니다.
 
-1. 이 저장소를 Fork합니다.
+1. 이 저장소를 포크합니다.
 2. 새로운 브랜치를 생성합니다.
 3. 변경 사항을 적용하고 테스트합니다.
-4. Commit을 생성합니다.
-5. Pull Request를 제출합니다.
+4. 커밋을 생성합니다.
+5. 풀 리퀘스트를 제출합니다.
 
-모든 Pull Request는 병합 전에 검토 과정을 거칩니다.
+모든 풀 리퀘스트는 병합 전에 검토 과정을 거칩니다.
 
-**참고: 개인적인 일정과 바쁜 현실적인 사정으로 인해 Issues와 Pull Requests를 정기적으로 확인하지 못할 수 있습니다. 따라서 답변이나 검토가 지연될 수 있는 점 양해 부탁드립니다. 기다려 주시고 이해해 주셔서 감사합니다!**
+**참고: 개인적인 일정과 바쁜 현실적인 사정으로 인해 이슈와 풀 리퀘스트를 정기적으로 확인하지 못할 수 있습니다. 따라서 답변이나 검토가 지연될 수 있는 점 양해 부탁드립니다. 기다려 주시고 이해해 주셔서 감사합니다!**
 
 ## 면책 조항
 
