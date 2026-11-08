@@ -113,6 +113,8 @@ Bug fixes, feature improvements, and other contributions are appreciated.
 
 All Pull Requests are subject to review before being merged.
 
+** Note: Due to personal commitments and a busy schedule, I may not be able to regularly check Issues and Pull Requests. Responses and reviews may therefore be delayed. Thank you for your understanding and patience! **
+
 ## Disclaimer
 
 CLD-tools is an independent project and is not affiliated with, endorsed by, or officially supported by the developers or publishers of TCOAAL.
