@@ -1,5 +1,11 @@
 # CLD-tools
 
+
+[Русский](README.ru.md) |
+[简体中文](README.zh-CN.md) |
+[Español](README.es.md) |
+[한국어](README.ko.md)
+
 A Perl-based utility for extracting, inspecting, and modifying CLD (Coffin Language Data) files used by *The Coffin of Andy and Leyley (TCOAAL)*.
 
 CLD-tools allows users to unpack and examine the game's officially supported user translation files. It can extract embedded images, fonts, and translation data, and includes a repacker for applying modifications back to CLD files.
