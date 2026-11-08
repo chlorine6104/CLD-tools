@@ -45,7 +45,8 @@ CLD-tools 包含一个独立的重新打包工具，允许用户修改提取出�
     ├── output.csv
     ├── font.ttf
     └── imgFiles/
-        └── extracted images...
+        └── directory
+            └──extracted images...
 
 实际输出结构取决于输入 CLD 文件的内容。
 
