@@ -2,7 +2,7 @@
 
 
 [Русский](README.ru.md) |
-[简体中文](README.zh-CN.md) |
+[简体中文](README.zh.md) |
 [Español](README.es.md) |
 [한국어](README.ko.md)
 
