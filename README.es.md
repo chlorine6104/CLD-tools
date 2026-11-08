@@ -45,7 +45,8 @@ Si no se especifica un directorio de salida, se utilizará el directorio de trab
     ├── output.csv
     ├── font.ttf
     └── imgFiles/
-        └── extracted images...
+        └── directory
+            └──extracted images...
 
 La estructura de salida real depende del contenido del archivo CLD de entrada.
 
