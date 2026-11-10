@@ -50,7 +50,7 @@ TCOAAL CLD Tools를 사용하면 게임의 사용자 번역 파일을 확인하�
 
 `--template`을 사용하지 않으면 영어 열이 비어 있는 기본 CSV 파일을 생성합니다. 이 형식도 `cld_repack.pl`에서 사용할 수 있습니다.
 
-## 재패커 사용법
+## 리패커 사용법
 
     perl cld_repack.pl [options] <input.cld> <output.cld> [dialogue.csv] [image_folder] [font_file]
 
