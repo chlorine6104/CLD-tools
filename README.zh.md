@@ -1,143 +1,165 @@
 # CLD-tools
 
-一个基于 Perl 的工具，用于提取、检查和修改《The Coffin of Andy and Leyley (TCOAAL)》使用的 CLD（Coffin Language Data）文件。
+[English](README.md) | [Русский](README.ru.md) | [Español](README.es.md) | [한국어](README.ko.md)
 
-CLD-tools 允许用户解包并检查游戏官方支持的用户翻译文件。它可以提取内嵌图像、字体和翻译数据，并提供重新打包工具，以便将修改应用到 CLD 文件中。
+一套用于提取、编辑、重新打包和比较 *The Coffin of Andy and Leyley* (TCOAAL) 所使用的 CLD（Coffin Language Data）文件的 Perl 工具。
 
-## 功能特性
+TCOAAL CLD Tools 可用于查看和修改游戏的用户翻译文件，支持提取对话、图片和字体，重新生成 CLD 文件，以及比较不同文件之间的改动。
 
-- **CLD 提取：** 读取 CLD 文件并提取其中的数据。
-- **图像提取：** 解码并提取 Base64 编码的图像数据。
-- **字体提取：** 提取内嵌字体，并使用指定的字体名称作为输出文件名。
-- **CSV 导出：** 将翻译数据和其他数据导出为 UTF-8 编码的 CSV 文件，同时保留层级键结构。
-- **CLD 重新打包：** 将修改应用于翻译数据、图像和字体。
+## 功能
 
-## 关于重新打包工具
-
-CLD-tools 包含一个独立的重新打包工具，允许用户修改提取出的 CLD 数据，并将其重新构建为 CLD 文件。
-
-该工具旨在无需依赖官方构建工具即可重新构建修改后的翻译数据和资源。
-
-在寻求与官方构建工具兼容的过程中，该重新打包工具将作为临时解决方案使用。
-
-一旦实现与官方构建工具的兼容，独立的重新打包工具将停止维护并从项目中移除。
+- **CLD 提取：** 从 CLD 文件中提取对话和资源。
+- **CSV 导出：** 将翻译数据导出为 UTF-8 CSV 文件。
+- **模板支持：** 使用游戏原版 `dialogue.csv` 作为模板。
+- **图片提取：** 提取内嵌图片。
+- **字体提取：** 提取内嵌字体文件。
+- **CLD 重新打包：** 将翻译和资源修改应用到 CLD 文件。
+- **CLD 比较：** 比较两个 CLD 文件并显示差异。
 
 ## 环境要求
 
 - Perl 5
-- JSON::PP
-- MIME::Base64
-- Encode
-- Text::CSV
-- File::Path
-- File::Basename
-- File::Find
+- Text::CSV（`cld_extract.pl` 所需）
+
+其他所需模块已包含在标准 Perl 发行版中。
 
 ## 提取器用法
 
-    perl extract_cld.pl input.cld [output_folder]
+    perl cld_extract.pl [--template dialogue.csv] <input.cld> [output_folder]
 
-如果未指定输出目录，则使用当前工作目录。
+如果未指定输出文件夹，则使用当前工作目录。
+
+### 使用 `--template`
+
+使用 `--template` 选项前，必须先通过游戏自带的 `translator.exe` 手动生成原版 `dialogue.csv`。
+
+然后使用 `--template` 将生成的 CSV 文件传递给 `cld_extract.pl`。
+
+    perl cld_extract.pl --template dialogue.csv input.cld output_folder
+
+模板的布局、条目顺序、说话者名称和英文文本都会保留。翻译内容会根据 ID 填入。
 
 ### 提取结果
 
     output_folder/
-    ├── output.csv
-    ├── font.ttf
-    └── imgFiles/
-        └── directory
-            └──extracted images...
+    ├── dialogue.csv
+    ├── img/
+    └── font/
 
-实际输出结构取决于输入 CLD 文件的内容。
+实际生成的内容取决于输入的 CLD 文件。
 
-## 重新打包工具用法
+不使用 `--template` 时，提取器会生成一个英文列为空的基础 CSV 文件。该格式同样可以用于 `cld_repack.pl`。
 
-    perl cld_repack.pl input.cld output.cld [output.csv] [image_folder] [font_file]
+## 重新打包用法
 
-### 参数说明
+    perl cld_repack.pl [options] <input.cld> <output.cld> [dialogue.csv] [image_folder] [font_file]
+
+输入和输出路径必须以 `.cld` 结尾。输出路径必须与输入路径不同。
+
+### 参数
 
 | 参数 | 说明 | 默认值 |
 |---|---|---|
 | input.cld | 原始 CLD 文件 | 必填 |
 | output.cld | 输出 CLD 文件 | 必填 |
-| output.csv | 修改后的 CSV 文件 | output.csv |
-| image_folder | 存放修改后图像的目录 | ./img |
-| font_file | 要应用的字体文件 | 未指定时保持不变 |
+| dialogue.csv | 包含翻译数据的 CSV 文件 | 不指定则保留原数据 |
+| image_folder | 存放修改后 PNG 图片的文件夹 | `./img` |
+| font_file | 要添加的字体文件 | 不指定则保留原字体 |
 
-### 使用示例
+### 选项
+
+| 选项 | 说明 |
+|---|---|
+| `--no-images` | 删除所有内嵌图片条目。 |
+| `--no-font` | 删除内嵌字体，并将字体名称重置为 `GameFont`。 |
+| `--font-face NAME` | 设置字体名称。 |
+
+### 示例
 
 **修改翻译数据**
 
-    perl cld_repack.pl original.cld modified.cld output.csv
+    perl cld_repack.pl original.cld modified.cld dialogue.csv
 
-**修改图像**
+**修改图片**
 
-    perl cld_repack.pl original.cld modified.cld output.csv ./img
+    perl cld_repack.pl original.cld modified.cld dialogue.csv ./img
 
 **修改字体**
 
-    perl cld_repack.pl original.cld modified.cld output.csv ./img ./font.ttf
+    perl cld_repack.pl original.cld modified.cld dialogue.csv ./img ./font.ttf
 
-## 重新打包过程
+**删除内嵌图片**
 
-- CSV 数据通过 section、key 和 value 列进行匹配。
-- 图像文件会被编码为 Base64，并应用到对应的现有条目。
-- 如果未指定图像目录，则默认使用 ./img。
-- 如果图像目录不存在，则跳过图像修改并保留原始图像数据。
-- 如果某个图像文件缺失，或者找不到对应条目，则跳过该条目并保留原始数据。
-- 字体文件会被编码为 Base64，同时更新 fontFile 和 fontFace 两个字段。
-- 如果未指定字体文件，则保留原始字体数据。
-- 缺失或无法匹配的 CSV 条目将被跳过，并保留原始数据。
-- 原始 CLD 文件绝不会被覆盖。所有修改都会保存到指定的输出文件中。
+    perl cld_repack.pl --no-images original.cld modified.cld
 
-**注意：** 重新打包工具目前仍处于实验阶段。请务必保留原始文件的备份。
+**删除内嵌字体**
 
-## TODO
+    perl cld_repack.pl --no-font original.cld modified.cld
 
-- [ ] 实现与官方构建工具的兼容。
-- [ ] 提高重新打包工具的稳定性和兼容性。
-- [ ] 改进错误处理和诊断信息。
-- [ ] 支持更多 CLD 数据结构。
-- [ ] 提高整体易用性。
+### 重新打包说明
+
+- 翻译单元格为空时，保留原始文本。
+- CSV 条目根据 ID 匹配。
+- 连续出现的相同 ID 行表示多行文本。
+- 不会向 CLD 文件添加新的 ID。
+- CSV 中缺失的条目会保留原始数据。
+- 只能替换已有的图片条目。
+- 图片必须是具有有效 PNG 签名的 PNG 文件。
+- 如果 `./img` 文件夹不存在，则保留原始图片。
+- 如果未指定字体文件，则保留原始字体。
+- 如果 `./font` 中只找到一个受支持的字体文件，则会自动选择该文件。
+- 不会覆盖原始 CLD 文件。
+
+## Diff 工具用法
+
+    perl cld_diff.pl <file_A.cld> <file_B.cld>
+
+比较两个 CLD 文件，并显示：
+
+- 已修改的条目。
+- 仅存在于文件 A 中的条目。
+- 仅存在于文件 B 中的条目。
+
+比较时会忽略 JSON 对象键的顺序和空白字符，但会保留数组顺序。
+
+图片和字体数据只显示编码后的数据长度，不会输出完整内容。
+
+如需进行字节级比较，请使用：
+
+    cmp file_A.cld file_B.cld
+
+Windows 下使用：
+
+    fc /b file_A.cld file_B.cld
 
 ## 参与贡献
 
-欢迎大家参与贡献！
-
-我们欢迎错误修复、功能改进以及其他形式的贡献。
+欢迎参与项目贡献！
 
 1. Fork 此仓库。
-2. 创建一个新分支。
-3. 进行修改并测试。
+2. 创建新分支。
+3. 修改并测试代码。
 4. 提交 Commit。
 5. 提交 Pull Request。
 
-所有 Pull Request 在合并前都需要经过审核。
-
-**注意：由于个人事务和日程繁忙，我可能无法定期查看 Issues 和 Pull Requests。因此，回复和审核可能会有所延迟。感谢大家的理解与耐心！**
+由于个人事务，Issues 和 Pull Requests 的回复可能会有所延迟。
 
 ## 免责声明
 
-CLD-tools 是一个独立项目，与 TCOAAL 的开发者或发行商没有任何关联，也未获得其认可或官方支持。
+TCOAAL CLD Tools 是一个独立项目，与 *The Coffin of Andy and Leyley* 的开发者或发行商无关，也未获得其认可或官方支持。
 
-本软件仅用于个人研究和合法的用户翻译工作。
+本软件用于个人研究和用户翻译工作。所有提取的游戏资源和翻译数据均归其各自所有者所有。
 
-请勿将本软件用于抄袭、未经授权的复制、再分发或侵犯版权的行为。
+用户有责任确保自己的使用方式符合适用法律及相关协议。
 
-所有提取的游戏资源和翻译数据均为其各自所有者的知识产权。
-
-用户有责任确保自己的使用行为符合所在司法管辖区适用的法律、许可证和服务条款。
-
-在适用法律允许的范围内，作者不对因滥用本软件而造成的损害、数据丢失或法律后果承担责任。
-
-请负责任地使用本软件，并自行承担使用风险。请始终遵守适用法律。
+请按照官方翻译工具的用户协议使用这些工具。
 
 ## 许可证
 
-本项目采用 GNU General Public License v3.0 (GPL-3.0) 许可证。
+本项目采用 GNU General Public License v3.0（GPL-3.0）许可证。
 
-完整许可证文本请参阅 LICENSE 文件。
+完整许可证文本请参阅 [LICENSE](LICENSE)。
 
 ---
 
-CLD-tools — 检查、提取和修改 Coffin Language Data。
+TCOAAL CLD Tools — 提取、编辑、重新打包和比较 CLD 文件。
