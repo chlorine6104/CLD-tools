@@ -1,58 +1,60 @@
 # CLD-tools
 
-Una herramienta basada en Perl para extraer, inspeccionar y modificar archivos CLD (Coffin Language Data) utilizados por *The Coffin of Andy and Leyley (TCOAAL)*.
+[English](README.md) | [Русский](README.ru.md) | [简体中文](README.zh.md) | [한국어](README.ko.md)
 
-CLD-tools permite a los usuarios desempaquetar y examinar los archivos de traducción de usuario oficialmente compatibles con el juego. Puede extraer imágenes, fuentes y datos de traducción integrados, e incluye una herramienta de reempaquetado para aplicar modificaciones a los archivos CLD.
+Una colección de herramientas en Perl para extraer, editar, reconstruir y comparar archivos CLD (Coffin Language Data) utilizados por *The Coffin of Andy and Leyley* (TCOAAL).
+
+TCOAAL CLD Tools permite examinar y modificar los archivos de traducción de usuario del juego. Incluye herramientas para extraer diálogos, imágenes y fuentes, reconstruir archivos CLD y comparar los cambios entre archivos.
 
 ## Características
 
-- **Extracción de CLD:** Lee archivos CLD y extrae los datos que contienen.
-- **Extracción de imágenes:** Decodifica y extrae datos de imágenes codificados en Base64.
-- **Extracción de fuentes:** Extrae las fuentes integradas y utiliza el nombre de la fuente especificado como nombre del archivo de salida.
-- **Exportación CSV:** Exporta datos de traducción y otros datos a archivos CSV con codificación UTF-8, conservando las claves jerárquicas.
-- **Reempaquetado de CLD:** Aplica modificaciones a los datos de traducción, imágenes y fuentes.
-
-## Acerca del reempaquetador
-
-CLD-tools incluye una herramienta de reempaquetado independiente que permite a los usuarios modificar los datos CLD extraídos y reconstruirlos en un archivo CLD.
-
-El reempaquetador se desarrolló para permitir reconstruir datos de traducción y recursos modificados sin depender de la herramienta de compilación oficial.
-
-El reempaquetador está pensado como una solución temporal mientras se trabaja para conseguir la compatibilidad con la herramienta de compilación oficial.
-
-Una vez establecida la compatibilidad con la herramienta oficial, el reempaquetador independiente dejará de mantenerse y se eliminará del proyecto.
+- **Extracción de CLD:** Extrae diálogos y recursos de archivos CLD.
+- **Exportación CSV:** Exporta los datos de traducción a archivos CSV en UTF-8.
+- **Compatibilidad con plantillas:** Utiliza el `dialogue.csv` original del juego como plantilla.
+- **Extracción de imágenes:** Extrae las imágenes integradas.
+- **Extracción de fuentes:** Extrae los archivos de fuentes integrados.
+- **Reconstrucción de CLD:** Aplica cambios de traducción y recursos a los archivos CLD.
+- **Comparación de CLD:** Compara dos archivos CLD y muestra sus diferencias.
 
 ## Requisitos
 
 - Perl 5
-- JSON::PP
-- MIME::Base64
-- Encode
-- Text::CSV
-- File::Path
-- File::Basename
-- File::Find
+- Text::CSV (necesario para `cld_extract.pl`)
+
+Los demás módulos necesarios están incluidos en las distribuciones estándar de Perl.
 
 ## Uso del extractor
 
-    perl extract_cld.pl input.cld [output_folder]
+    perl cld_extract.pl [--template dialogue.csv] <input.cld> [output_folder]
 
-Si no se especifica un directorio de salida, se utilizará el directorio de trabajo actual.
+Si no se especifica una carpeta de salida, se utiliza el directorio de trabajo actual.
+
+### Uso de `--template`
+
+Para utilizar la opción `--template`, primero debes generar manualmente el `dialogue.csv` original mediante el `translator.exe` del juego.
+
+Después, pasa el CSV generado a `cld_extract.pl` mediante `--template`.
+
+    perl cld_extract.pl --template dialogue.csv input.cld output_folder
+
+Se conservan la estructura de la plantilla, el orden de las entradas, los nombres de los personajes y el texto en inglés. Los datos de traducción se rellenan según el ID.
 
 ### Resultado de la extracción
 
     output_folder/
-    ├── output.csv
-    ├── font.ttf
-    └── imgFiles/
-        └── directory
-            └──extracted images...
+    ├── dialogue.csv
+    ├── img/
+    └── font/
 
-La estructura de salida real depende del contenido del archivo CLD de entrada.
+El contenido generado depende del archivo CLD de entrada.
 
-## Uso del reempaquetador
+Sin `--template`, el extractor genera un CSV básico con la columna de inglés vacía. Este formato también puede utilizarse con `cld_repack.pl`.
 
-    perl cld_repack.pl input.cld output.cld [output.csv] [image_folder] [font_file]
+## Uso del repacker
+
+    perl cld_repack.pl [options] <input.cld> <output.cld> [dialogue.csv] [image_folder] [font_file]
+
+Las rutas de entrada y salida deben terminar en `.cld`. La ruta de salida debe ser distinta de la ruta de entrada.
 
 ### Argumentos
 
@@ -60,84 +62,104 @@ La estructura de salida real depende del contenido del archivo CLD de entrada.
 |---|---|---|
 | input.cld | Archivo CLD original | Obligatorio |
 | output.cld | Archivo CLD de salida | Obligatorio |
-| output.csv | Archivo CSV modificado | output.csv |
-| image_folder | Directorio que contiene las imágenes modificadas | ./img |
-| font_file | Archivo de fuente que se aplicará | Sin cambios si se omite |
+| dialogue.csv | CSV con los datos de traducción | Sin cambios si se omite |
+| image_folder | Carpeta con las imágenes PNG modificadas | `./img` |
+| font_file | Archivo de fuente que se insertará | Sin cambios si se omite |
+
+### Opciones
+
+| Opción | Descripción |
+|---|---|
+| `--no-images` | Elimina todas las entradas de imágenes integradas. |
+| `--no-font` | Elimina la fuente integrada y restablece el nombre de la fuente a `GameFont`. |
+| `--font-face NAME` | Establece el nombre de la fuente. |
 
 ### Ejemplos
 
 **Modificar los datos de traducción**
 
-    perl cld_repack.pl original.cld modified.cld output.csv
+    perl cld_repack.pl original.cld modified.cld dialogue.csv
 
 **Modificar imágenes**
 
-    perl cld_repack.pl original.cld modified.cld output.csv ./img
+    perl cld_repack.pl original.cld modified.cld dialogue.csv ./img
 
 **Modificar fuentes**
 
-    perl cld_repack.pl original.cld modified.cld output.csv ./img ./font.ttf
+    perl cld_repack.pl original.cld modified.cld dialogue.csv ./img ./font.ttf
 
-## Proceso de reempaquetado
+**Eliminar imágenes integradas**
 
-- Los valores CSV se comparan utilizando las columnas section, key y value.
-- Los archivos de imagen se codifican en Base64 y se aplican a sus entradas existentes correspondientes.
-- Si no se especifica el directorio de imágenes, se utiliza ./img de forma predeterminada.
-- Si el directorio de imágenes no existe, se omiten las modificaciones de imágenes y se conservan los datos originales.
-- Si falta un archivo de imagen individual o no se encuentra su entrada correspondiente, se omite esa entrada y se conservan sus datos originales.
-- Los archivos de fuentes se codifican en Base64 y se actualizan tanto fontFile como fontFace.
-- Si no se especifica un archivo de fuente, se conservan los datos originales de la fuente.
-- Las entradas CSV que falten o no puedan coincidir se omiten, conservando los datos originales.
-- El archivo CLD original nunca se sobrescribe. Todos los cambios se guardan en el archivo de salida especificado.
+    perl cld_repack.pl --no-images original.cld modified.cld
 
-**Nota:** El reempaquetador es experimental. Guarda siempre copias de seguridad de tus archivos originales.
+**Eliminar la fuente integrada**
 
-## TODO
+    perl cld_repack.pl --no-font original.cld modified.cld
 
-- [ ] Establecer compatibilidad con la herramienta de compilación oficial.
-- [ ] Mejorar la estabilidad y compatibilidad del reempaquetador.
-- [ ] Mejorar la gestión de errores y los mensajes de diagnóstico.
-- [ ] Añadir compatibilidad con estructuras de datos CLD adicionales.
-- [ ] Mejorar la facilidad de uso general.
+### Notas sobre la reconstrucción
+
+- Las celdas de traducción vacías conservan el texto original.
+- Las entradas CSV se emparejan por ID.
+- Las filas consecutivas con el mismo ID representan varias líneas.
+- No se añaden ID nuevos al archivo CLD.
+- Las entradas que faltan en el CSV conservan los datos originales.
+- Solo se pueden reemplazar entradas de imágenes existentes.
+- Las imágenes deben ser archivos PNG con una firma PNG válida.
+- Si la carpeta `./img` no existe, se conservan las imágenes originales.
+- Si no se especifica un archivo de fuente, se conserva la fuente original.
+- Si se encuentra exactamente un archivo de fuente compatible en `./font`, se selecciona automáticamente.
+- El archivo CLD original nunca se sobrescribe.
+
+## Uso de la herramienta Diff
+
+    perl cld_diff.pl <file_A.cld> <file_B.cld>
+
+Compara dos archivos CLD y muestra:
+
+- Entradas modificadas.
+- Entradas que solo existen en el archivo A.
+- Entradas que solo existen en el archivo B.
+
+Se ignoran el orden de las claves de los objetos y los espacios en blanco del JSON. Se conserva el orden de los elementos de los arrays.
+
+Los datos de imágenes y fuentes se resumen mediante su longitud codificada, sin mostrar su contenido completo.
+
+Para realizar una comparación byte a byte, utiliza:
+
+    cmp file_A.cld file_B.cld
+
+En Windows:
+
+    fc /b file_A.cld file_B.cld
 
 ## Contribuciones
 
 ¡Las contribuciones son bienvenidas!
 
-Se agradecen las correcciones de errores, las mejoras de funcionalidades y cualquier otro tipo de contribución.
-
 1. Haz un Fork de este repositorio.
 2. Crea una nueva rama.
-3. Realiza tus cambios y pruébalos.
+3. Realiza los cambios y pruébalos.
 4. Crea un Commit.
 5. Envía un Pull Request.
 
-Todos los Pull Requests se revisarán antes de ser integrados.
-
-**Nota: Debido a compromisos personales y a una agenda bastante ocupada, es posible que no pueda revisar regularmente los Issues y Pull Requests. Por lo tanto, las respuestas y revisiones pueden tardar más de lo habitual. ¡Gracias por tu comprensión y paciencia!**
+Las respuestas a Issues y Pull Requests pueden demorarse debido a compromisos personales.
 
 ## Aviso legal
 
-CLD-tools es un proyecto independiente y no está afiliado, respaldado ni cuenta con el apoyo oficial de los desarrolladores o distribuidores de TCOAAL.
+TCOAAL CLD Tools es un proyecto independiente y no está afiliado, respaldado ni apoyado oficialmente por los desarrolladores o distribuidores de *The Coffin of Andy and Leyley*.
 
-Este software está destinado a la investigación personal y a los procesos legítimos de traducción por parte de los usuarios.
+Este software está destinado a la investigación personal y a los procesos de traducción de usuarios. Todos los recursos extraídos del juego y los datos de traducción siguen siendo propiedad intelectual de sus respectivos titulares.
 
-No utilices este software para plagiar, copiar o redistribuir contenido sin autorización, ni para infringir derechos de autor.
+Los usuarios son responsables de asegurarse de que su uso cumpla con las leyes y los acuerdos aplicables.
 
-Todos los recursos del juego y los datos de traducción extraídos siguen siendo propiedad intelectual de sus respectivos titulares.
-
-Los usuarios son los únicos responsables de garantizar que su uso cumpla con las leyes, licencias y condiciones de servicio aplicables en su jurisdicción.
-
-En la medida permitida por la legislación aplicable, el autor no asume ninguna responsabilidad por daños, pérdida de datos o consecuencias legales derivadas del uso indebido del software.
-
-Utiliza este software de manera responsable y bajo tu propia responsabilidad. Respeta siempre las leyes aplicables.
+Utiliza estas herramientas de acuerdo con el acuerdo de usuario de la herramienta oficial de traducción.
 
 ## Licencia
 
 Este proyecto está publicado bajo la licencia GNU General Public License v3.0 (GPL-3.0).
 
-Consulta el archivo LICENSE para ver el texto completo de la licencia.
+Consulta [LICENSE](LICENSE) para ver el texto completo de la licencia.
 
 ---
 
-CLD-tools — Inspeccionar, extraer y modificar Coffin Language Data.
+TCOAAL CLD Tools — Extraer, editar, reconstruir y comparar archivos CLD.
