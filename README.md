@@ -3,7 +3,7 @@
 
 [Русский](README.ru.md) | [简体中文](README.zh.md) | [Español](README.es.md) | [한국어](README.ko.md)
 
-A collection of Perl tools for extracting, editing, repacking, and comparing CLD (Coffin Language Data) files used by *The Coffin of Andy and Leyley (TCOAAL)*.
+A collection of Perl tools for extracting, editing, repacking, and comparing CLD (Coffin Language Data) files used by _The Coffin of Andy and Leyley_ (TCOAAL).
 
 TCOAAL CLD Tools allows users to inspect and modify the game's user translation files. It includes tools for extracting dialogue, images, and fonts, rebuilding CLD files, and comparing changes between files.
 
