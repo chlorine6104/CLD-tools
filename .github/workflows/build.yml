@@ -21,21 +21,25 @@ jobs:
             ext: ".exe"
             sep: ";"
             pyi_args: "--onefile --windowed"
-          - os: ubuntu-22.04          # older glibc = wider Linux compatibility
+            perl_shell: pwsh
+          - os: ubuntu-22.04
             target: linux-x64
             ext: ""
             sep: ":"
             pyi_args: "--onefile"
-          - os: macos-latest              # Apple Silicon
+            perl_shell: bash
+          - os: macos-latest
             target: macos-arm64
             ext: ""
             sep: ":"
             pyi_args: "--windowed"
-          - os: macos-26-intel        # Intel
+            perl_shell: bash
+          - os: macos-26-intel
             target: macos-x64
             ext: ""
             sep: ":"
             pyi_args: "--windowed"
+            perl_shell: bash
     defaults:
       run:
         shell: bash
@@ -54,13 +58,13 @@ jobs:
 
       - name: Prepare output folder
         run: mkdir -p perl-bin
-
+        
       - name: Install PAR::Packer and Text::CSV
-        shell: ${{ runner.os == 'Windows' && 'pwsh' || 'bash' }}
+        shell: ${{ matrix.perl_shell }}
         run: cpanm --notest --quiet PAR::Packer Text::CSV
 
       - name: Build Perl binaries with pp
-        shell: ${{ runner.os == 'Windows' && 'pwsh' || 'bash' }}
+        shell: ${{ matrix.perl_shell }}
         run: |
           pp -z 9 -M Text::CSV -M Text::CSV_PP -M PerlIO::encoding -o perl-bin/cld_extract${{ matrix.ext }} cld_extract.pl
           pp -z 9 -M Text::CSV -M Text::CSV_PP -M PerlIO::encoding -o perl-bin/cld_repack${{ matrix.ext }} cld_repack.pl
