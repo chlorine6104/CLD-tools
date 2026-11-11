@@ -95,6 +95,10 @@ jobs:
           grep -q Bonjour t2.cld
           echo "Perl binaries OK"
 
+      - name: Pack Perl tools as an archive (macOS)
+        if: runner.os == 'macOS'
+        run: tar -czf perl-bin/tools.tar.gz -C perl-bin cld_extract cld_repack
+
       # ---------- Python -> single file ----------
       - uses: actions/setup-python@v5
         with:
@@ -108,6 +112,7 @@ jobs:
 
       # --add-data (not --add-binary): PyInstaller must not rewrite/strip the PAR payload.
       - name: Build app with PyInstaller
+        if: runner.os != 'macOS'
         run: |
           pyinstaller ${{ matrix.pyi_args }} --noconfirm --clean \
             --name CLD-Tool --distpath out \
@@ -116,7 +121,17 @@ jobs:
             --add-data "perl-bin/cld_repack${EXT}${{ matrix.sep }}tools" \
             main.py
           ls -l out
-          
+
+      - name: Build app with PyInstaller (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          pyinstaller ${{ matrix.pyi_args }} --noconfirm --clean \
+            --name CLD-Tool --distpath out \
+            --collect-data customtkinter \
+            --add-data "perl-bin/tools.tar.gz:tools" \
+            main.py
+          ls -l out
+
       - name: Build CLI app with PyInstaller (Windows)
         if: runner.os == 'Windows'
         run: |
@@ -130,13 +145,19 @@ jobs:
           
       - name: CLI smoke test
         run: |
-          if [ "$RUNNER_OS" = "macOS" ]; then
-            out/CLD-Tool.app/Contents/MacOS/CLD-Tool --help
-          elif [ "$RUNNER_OS" = "Windows" ]; then
-            out/CLD-Tool-cli.exe --help
-          else
-            out/CLD-Tool --help
-          fi
+          set -euo pipefail
+          case "$RUNNER_OS" in
+            macOS)   APP="$PWD/out/CLD-Tool.app/Contents/MacOS/CLD-Tool" ;;
+            Windows) APP="$PWD/out/CLD-Tool-cli.exe" ;;
+            *)       APP="$PWD/out/CLD-Tool" ;;
+          esac
+          "$APP" --help
+          T="$(mktemp -d)"
+          printf '%s' 'LANGDATA{"langName":"Test","fontFace":"F","fontSize":20,"fontFile":null,"imgFiles":{},"langInfo":["a","b","c"],"sysLabel":{"k":"v"},"sysMenus":{},"labelLUT":{"1":"Speaker"},"linesLUT":{"2":["Hello","World"]}}' > "$T/t.cld"
+          "$APP" extract "$T/t.cld" "$T/out"
+          test -f "$T/out/dialogue.csv"
+          "$APP" repack "$T/t.cld" "$T/t2.cld" --csv "$T/out/dialogue.csv"
+          test -f "$T/t2.cld"
 
       - name: Package
         run: |
