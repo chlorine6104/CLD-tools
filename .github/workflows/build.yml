@@ -59,12 +59,24 @@ jobs:
       - name: Prepare output folder
         run: mkdir -p perl-bin
         
-      - name: Install PAR::Packer and Text::CSV
-        shell: ${{ matrix.perl_shell }}
+      - name: Install PAR::Packer and Text::CSV (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
         run: cpanm --notest --quiet PAR::Packer Text::CSV
 
+      - name: Install PAR::Packer and Text::CSV
+        if: runner.os != 'Windows'
+        run: cpanm --notest --quiet PAR::Packer Text::CSV
+
+      - name: Build Perl binaries with pp (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          pp -z 9 -M Text::CSV -M Text::CSV_PP -M PerlIO::encoding -o perl-bin/cld_extract${{ matrix.ext }} cld_extract.pl
+          pp -z 9 -M Text::CSV -M Text::CSV_PP -M PerlIO::encoding -o perl-bin/cld_repack${{ matrix.ext }} cld_repack.pl
+
       - name: Build Perl binaries with pp
-        shell: ${{ matrix.perl_shell }}
+        if: runner.os != 'Windows'
         run: |
           pp -z 9 -M Text::CSV -M Text::CSV_PP -M PerlIO::encoding -o perl-bin/cld_extract${{ matrix.ext }} cld_extract.pl
           pp -z 9 -M Text::CSV -M Text::CSV_PP -M PerlIO::encoding -o perl-bin/cld_repack${{ matrix.ext }} cld_repack.pl
