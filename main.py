@@ -6,6 +6,7 @@ import sys
 import tempfile
 import threading
 import argparse
+import tarfile
 from pathlib import Path
 from tkinter import filedialog
 
@@ -45,6 +46,35 @@ def search_dirs():
         dirs.append(Path(__file__).resolve().parent)
     return dirs
 
+def unpack_tools(archive):
+    """macOS builds ship the Perl tools inside a tar.gz (PyInstaller would try to
+    re-sign them as Mach-O and fail). Unpack once into a per-user cache."""
+    st = archive.stat()
+    base = Path.home() / ("Library/Caches" if sys.platform == "darwin" else ".cache") / "CLD-Tool"
+    cache = base / f"tools-{st.st_size}-{int(st.st_mtime)}"
+
+    def ready(d):
+        return (d / "cld_extract").is_file() and (d / "cld_repack").is_file()
+
+    if ready(cache):
+        return cache
+    try:
+        base.mkdir(parents=True, exist_ok=True)
+        tmp = Path(tempfile.mkdtemp(prefix="unpack_", dir=base))
+        try:
+            with tarfile.open(archive) as tf:
+                tf.extractall(tmp, filter="data")
+            for f in tmp.iterdir():
+                f.chmod(0o755)
+            try:
+                tmp.rename(cache)
+            except OSError:                       # another process unpacked first
+                pass
+        finally:
+            shutil.rmtree(tmp, ignore_errors=True)
+    except Exception:
+        return None
+    return cache if ready(cache) else None
 
 def find_tool(name):
     """Returns the command prefix for 'cld_extract' / 'cld_repack', or None."""
@@ -58,6 +88,11 @@ def find_tool(name):
                 except OSError:
                     continue
             return [str(p)]
+        arc = d / "tools" / "tools.tar.gz"          # macOS bundle layout
+        if arc.is_file():
+            folder = unpack_tools(arc)
+            if folder:
+                return [str(folder / name)]
     # Development fallback: run the .pl directly if Perl happens to be installed
     perl = shutil.which("perl")
     script = Path(__file__).resolve().parent / f"{name}.pl"
