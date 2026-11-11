@@ -1,0 +1,138 @@
+name: Build
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build (${{ matrix.target }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            target: windows-x64
+            ext: ".exe"
+            sep: ";"
+            pyi_args: "--onefile --windowed"
+          - os: ubuntu-22.04          # older glibc = wider Linux compatibility
+            target: linux-x64
+            ext: ""
+            sep: ":"
+            pyi_args: "--onefile"
+          - os: macos-latest              # Apple Silicon
+            target: macos-arm64
+            ext: ""
+            sep: ":"
+            pyi_args: "--windowed"
+          - os: macos-26-intel        # Intel
+            target: macos-x64
+            ext: ""
+            sep: ":"
+            pyi_args: "--windowed"
+    defaults:
+      run:
+        shell: bash
+    env:
+      EXT: ${{ matrix.ext }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # ---------- Perl -> standalone binaries ----------
+      - name: Set up Perl
+        uses: shogo82148/actions-setup-perl@v1
+        with:
+          perl-version: "5.40"
+
+      - name: Install PAR::Packer and Text::CSV
+        run: cpanm --notest --quiet PAR::Packer Text::CSV
+
+      - name: Build Perl binaries with pp
+        run: |
+          mkdir -p perl-bin
+          for name in cld_extract cld_repack; do
+            pp -z 9 \
+              -M Text::CSV -M Text::CSV_PP -M PerlIO::encoding \
+              -o "perl-bin/${name}${EXT}" "${name}.pl"
+          done
+          ls -l perl-bin
+
+      # Appending the PAR archive invalidates the signature; arm64 macOS kills unsigned binaries.
+      - name: Re-sign Perl binaries (macOS)
+        if: runner.os == 'macOS'
+        run: codesign --force --sign - perl-bin/cld_extract perl-bin/cld_repack
+
+      - name: Smoke-test Perl binaries
+        run: |
+          set -euo pipefail
+          BIN="$GITHUB_WORKSPACE/perl-bin"
+          T="$(mktemp -d)"
+          cd "$T"
+          printf '%s' 'LANGDATA{"langName":"Test","fontFace":"F","fontSize":20,"fontFile":null,"imgFiles":{},"langInfo":["a","b","c"],"sysLabel":{"k":"v"},"sysMenus":{},"labelLUT":{"1":"Speaker"},"linesLUT":{"2":["Hello","World"]}}' > t.cld
+          "$BIN/cld_extract${EXT}" t.cld out
+          test -f out/dialogue.csv
+          sed 's/Hello/Bonjour/' out/dialogue.csv > out/edited.csv
+          "$BIN/cld_repack${EXT}" t.cld t2.cld out/edited.csv
+          grep -q Bonjour t2.cld
+          echo "Perl binaries OK"
+
+      # ---------- Python -> single file ----------
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          allow-prereleases: true   # drop this once 3.15 is stable on the runner; use 3.13 if PyInstaller lags
+
+      - name: Install Python deps
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install customtkinter pyinstaller
+          python -c "import tkinter, customtkinter; print('tk', tkinter.TkVersion, '| customtkinter', customtkinter.__version__)"
+
+      # --add-data (not --add-binary): PyInstaller must not rewrite/strip the PAR payload.
+      - name: Build app with PyInstaller
+        run: |
+          pyinstaller ${{ matrix.pyi_args }} --noconfirm --clean \
+            --name CLD-Tool --distpath out \
+            --collect-data customtkinter \
+            --add-data "perl-bin/cld_extract${EXT}${{ matrix.sep }}tools" \
+            --add-data "perl-bin/cld_repack${EXT}${{ matrix.sep }}tools" \
+            main.py
+          ls -l out
+
+      - name: Package
+        run: |
+          mkdir -p release
+          case "${{ matrix.target }}" in
+            windows-*) cp out/CLD-Tool.exe "release/CLD-Tool-${{ matrix.target }}.exe" ;;
+            linux-*)   tar -czf "release/CLD-Tool-${{ matrix.target }}.tar.gz" -C out CLD-Tool ;;
+            macos-*)   ditto -c -k --keepParent out/CLD-Tool.app "release/CLD-Tool-${{ matrix.target }}.zip" ;;
+          esac
+          ls -l release
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: CLD-Tool-${{ matrix.target }}
+          path: release/*
+          if-no-files-found: error
+
+  release:
+    name: Publish release
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: release
+          merge-multiple: true
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: release/*
+          generate_release_notes: true
