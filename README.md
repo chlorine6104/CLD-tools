@@ -1,11 +1,10 @@
 # CLD-tools
 
-
 [Русский](README.ru.md) | [简体中文](README.zh.md) | [Español](README.es.md) | [한국어](README.ko.md)
 
-A collection of Perl tools for extracting, editing, repacking, and comparing CLD (Coffin Language Data) files used by _The Coffin of Andy and Leyley_ (TCOAAL).
+A toolkit for extracting, editing, repacking, and comparing CLD (Coffin Language Data) files used by _The Coffin of Andy and Leyley_ (TCOAAL).
 
-TCOAAL CLD Tools allows users to inspect and modify the game's user translation files. It includes tools for extracting dialogue, images, and fonts, rebuilding CLD files, and comparing changes between files.
+It ships as a ready-to-run desktop app with a GUI and a command-line interface for Windows, Linux, and macOS. No Perl installation is needed. The underlying Perl scripts are also available for use directly.
 
 ## Features
 
@@ -15,32 +14,64 @@ TCOAAL CLD Tools allows users to inspect and modify the game's user translation 
 - **Image Extraction:** Extracts embedded images.
 - **Font Extraction:** Extracts embedded font files.
 - **CLD Repacking:** Applies translation and resource changes to CLD files.
-- **CLD Comparison:** Compares two CLD files and reports their differences.
+- **CLD Comparison:** Compares two CLD files and reports their differences (Perl script only).
+- **GUI and CLI:** Run without arguments for the GUI, or pass a command for the CLI.
 
-## Requirements
+## Download
 
-- Perl 5
-- Text::CSV (required by `cld_extract.pl`)
+Get the build for your system from the [Releases](../../releases) page.
 
-Other required modules are included with standard Perl distributions.
+| Platform | File | Notes |
+|---|---|---|
+| Windows (x64) | `CLD-Tool-windows-x64.exe` | GUI |
+| Windows (x64) | `CLD-Tool-cli-windows-x64.exe` | Command line. Keep `-cli` in the file name. |
+| Linux (x64) | `CLD-Tool-linux-x64.tar.gz` | GUI and CLI in one executable |
+| macOS (Apple Silicon) | `CLD-Tool-macos-arm64.zip` | GUI and CLI in one app bundle |
+| macOS (Intel) | `CLD-Tool-macos-x64.zip` | GUI and CLI in one app bundle |
 
-## Extractor Usage
+Each build bundles everything it needs. The first launch may take a few seconds longer while the bundled tools unpack.
 
-    perl cld_extract.pl [--template dialogue.csv] <input.cld> [output_folder]
+**Linux:** extract with `tar -xzf CLD-Tool-linux-x64.tar.gz`, then run `./CLD-Tool`. A desktop environment with Tk support is required for the GUI.
 
-The output folder defaults to the current working directory.
+**macOS:** the app is not notarized. If macOS blocks it on first launch, remove the quarantine flag:
 
-### Using `--template`
+    xattr -dr com.apple.quarantine CLD-Tool.app
 
-To use the `--template` option, you must first generate the original `dialogue.csv` yourself using the game's `translator.exe`.
+## GUI
 
-Then, pass the generated CSV file to `cld_extract.pl` with `--template`.
+Run the app without arguments (double-click it on Windows and macOS, or run `./CLD-Tool` on Linux).
 
-    perl cld_extract.pl --template dialogue.csv input.cld output_folder
+- **Extract tab:** choose a CLD file, optionally a template CSV and an output folder.
+- **Repack tab:** choose the source CLD and the output CLD, plus an optional CSV, image folder, and font file. The switches remove images or the embedded font, and the field next to them sets the font face.
+
+The window follows your system's light or dark theme. Progress and warnings appear in the log panel.
+
+## Command Line
+
+    CLD-Tool extract [-t dialogue.csv] <input.cld> [output_folder]
+    CLD-Tool repack [options] <input.cld> <output.cld>
+    CLD-Tool gui
+    CLD-Tool --help
+
+On Windows use `CLD-Tool-cli` (the console build). On macOS the executable is inside the app bundle:
+
+    CLD-Tool.app/Contents/MacOS/CLD-Tool extract input.cld output_folder
+
+Running the Linux or macOS executable with no arguments opens the GUI. The Windows `-cli` build prints the help text instead.
+
+### Extract
+
+    CLD-Tool extract [--template dialogue.csv] <input.cld> [output_folder]
+
+The output folder defaults to a folder next to the input file, named after it.
+
+To use `--template`, first generate the original `dialogue.csv` yourself using the game's `translator.exe`, then pass it in:
+
+    CLD-Tool extract --template dialogue.csv input.cld output_folder
 
 The template's layout, entry order, speaker names, and English text are preserved. Translation data is filled in by ID.
 
-### Extractor Output
+Output:
 
     output_folder/
     ├── dialogue.csv
@@ -49,53 +80,39 @@ The template's layout, entry order, speaker names, and English text are preserve
 
 The actual contents depend on the input CLD file.
 
-Without `--template`, the extractor generates a basic CSV file with an empty English column. This format can still be used with `cld_repack.pl`.
+Without `--template`, a basic CSV with an empty English column is generated. This format can still be used for repacking.
 
-## Repacker Usage
+### Repack
 
-    perl cld_repack.pl [options] <input.cld> <output.cld> [dialogue.csv] [image_folder] [font_file]
-
-The input and output paths must end in `.cld`. The output path must differ from the input path.
-
-### Arguments
-
-| Argument | Description | Default |
-|---|---|---|
-| input.cld | Original CLD file | Required |
-| output.cld | Output CLD file | Required |
-| dialogue.csv | CSV containing translation data | Unchanged if omitted |
-| image_folder | Folder containing modified PNG images | `./img` |
-| font_file | Font file to insert | Unchanged if omitted |
-
-### Options
+    CLD-Tool repack [options] <input.cld> <output.cld>
 
 | Option | Description |
 |---|---|
-| `--no-images` | Removes all embedded image entries. |
-| `--no-font` | Removes the embedded font and resets the font face to `GameFont`. |
-| `--font-face NAME` | Sets the font face name. |
+| `--csv FILE` | CSV containing translation data. Unchanged if omitted. |
+| `--images FOLDER` | Folder containing modified PNG images. Unchanged if omitted. |
+| `--font FILE` | Font file to insert. Unchanged if omitted. |
+| `--no-images` | Removes all embedded image entries. Cannot be combined with `--images`. |
+| `--no-font` | Removes the embedded font and resets the font face to `GameFont`. Cannot be combined with `--font`. |
+| `--font-face NAME` | Sets the font face name. `GameFont` is reserved. |
 
-### Examples
+The input and output paths must end in `.cld`, and the output path must differ from the input path.
 
-**Modify translation data**
+**Examples**
 
-    perl cld_repack.pl original.cld modified.cld dialogue.csv
+Modify translation data:
 
-**Modify images**
+    CLD-Tool repack original.cld modified.cld --csv dialogue.csv
 
-    perl cld_repack.pl original.cld modified.cld dialogue.csv ./img
+Modify images and fonts:
 
-**Modify fonts**
+    CLD-Tool repack original.cld modified.cld --csv dialogue.csv --images ./img --font ./font.ttf
 
-    perl cld_repack.pl original.cld modified.cld dialogue.csv ./img ./font.ttf
+Remove embedded images or the embedded font:
 
-**Remove embedded images**
+    CLD-Tool repack original.cld modified.cld --no-images
+    CLD-Tool repack original.cld modified.cld --no-font
 
-    perl cld_repack.pl --no-images original.cld modified.cld
-
-**Remove the embedded font**
-
-    perl cld_repack.pl --no-font original.cld modified.cld
+Exit codes: `0` on success, `2` for invalid arguments, otherwise the exit code of the underlying tool.
 
 ### Repacking Notes
 
@@ -106,32 +123,46 @@ The input and output paths must end in `.cld`. The output path must differ from 
 - Missing CSV entries preserve the original data.
 - Only existing image entries can be replaced.
 - Images must be PNG files with valid PNG signatures.
-- If `./img` does not exist, original images are preserved.
-- If no font file is specified, the original font is preserved.
-- If exactly one supported font is found in `./font`, it is selected automatically.
 - The original CLD file is never overwritten.
+- The GUI and CLI never pick up `./img` or `./font` automatically. Pass the image folder and font file explicitly. Only the standalone Perl scripts do this (see below).
 
-## Diff Tool Usage
+## Perl Scripts
+
+The scripts in this repository are the original implementation, and the app runs bundled, self-contained builds of them. You can still run them directly if you prefer.
+
+**Requirements:** Perl 5 and `Text::CSV` (required by `cld_extract.pl`). Other required modules are included with standard Perl distributions.
+
+    perl cld_extract.pl [--template dialogue.csv] <input.cld> [output_folder]
+    perl cld_repack.pl [options] <input.cld> <output.cld> [dialogue.csv] [image_folder] [font_file]
+
+When run directly, the repacker also:
+
+- uses `./img` as the default image folder (original images are preserved if it does not exist), and
+- selects the font automatically if exactly one supported font is found in `./font`.
+
+The output folder of the extractor defaults to the current working directory.
+
+### Diff Tool
 
     perl cld_diff.pl <file_A.cld> <file_B.cld>
 
-Compares two CLD files and reports:
+Compares two CLD files and reports modified entries, entries found only in file A, and entries found only in file B. Object key order and JSON whitespace are ignored. Array order is preserved. Image and font data are summarized by their encoded lengths instead of displaying the full data.
 
-- Modified entries.
-- Entries found only in file A.
-- Entries found only in file B.
+This tool is not included in the app and requires Perl. For a byte-level comparison, use `cmp file_A.cld file_B.cld` (on Windows: `fc /b file_A.cld file_B.cld`).
 
-Object key order and JSON whitespace are ignored. Array order is preserved.
+## Building from Source
 
-Image and font data are summarized by their encoded lengths instead of displaying the full data.
+Releases are built by GitHub Actions on Windows, Linux, and macOS:
 
-For a byte-level comparison, use:
+1. The Perl scripts are packaged into standalone executables with [PAR::Packer](https://metacpan.org/pod/PAR::Packer).
+2. [PyInstaller](https://pyinstaller.org) bundles those executables with `main.py` into the final app.
 
-    cmp file_A.cld file_B.cld
+To run the app from source you need Python 3.13 and `customtkinter`:
 
-On Windows:
+    pip install customtkinter
+    python main.py
 
-    fc /b file_A.cld file_B.cld
+Without bundled tools, the app falls back to a Perl found on your `PATH` and the `.pl` files next to `main.py`.
 
 ## Contributing
 
@@ -160,6 +191,8 @@ Use these tools in accordance with the official translation tool's user agreemen
 This project is licensed under the GNU General Public License v3.0 (GPL-3.0).
 
 See [LICENSE](LICENSE) for the full license text.
+
+The released binaries also contain third-party components (Perl and its modules, Python, customtkinter, PyInstaller) under their own licenses. See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
 ---
 
