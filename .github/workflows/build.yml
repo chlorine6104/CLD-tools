@@ -105,12 +105,36 @@ jobs:
             --add-data "perl-bin/cld_repack${EXT}${{ matrix.sep }}tools" \
             main.py
           ls -l out
+          
+      - name: Build CLI app with PyInstaller (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          pyinstaller --onefile --console --noconfirm --clean \
+            --name CLD-Tool-cli --distpath out \
+            --collect-data customtkinter \
+            --add-data "perl-bin/cld_extract${EXT}${{ matrix.sep }}tools" \
+            --add-data "perl-bin/cld_repack${EXT}${{ matrix.sep }}tools" \
+            main.py
+          ls -l out
+          
+      - name: CLI smoke test
+        run: |
+          if [ "$RUNNER_OS" = "macOS" ]; then
+            out/CLD-Tool.app/Contents/MacOS/CLD-Tool --help
+          elif [ "$RUNNER_OS" = "Windows" ]; then
+            out/CLD-Tool-cli.exe --help
+          else
+            out/CLD-Tool --help
+          fi
 
       - name: Package
         run: |
           mkdir -p release
           case "${{ matrix.target }}" in
-            windows-*) cp out/CLD-Tool.exe "release/CLD-Tool-${{ matrix.target }}.exe" ;;
+            windows-*)
+              cp out/CLD-Tool.exe     "release/CLD-Tool-${{ matrix.target }}.exe"
+              cp out/CLD-Tool-cli.exe "release/CLD-Tool-cli-${{ matrix.target }}.exe"
+              ;;
             linux-*)   tar -czf "release/CLD-Tool-${{ matrix.target }}.tar.gz" -C out CLD-Tool ;;
             macos-*)   ditto -c -k --keepParent out/CLD-Tool.app "release/CLD-Tool-${{ matrix.target }}.zip" ;;
           esac
